@@ -37,10 +37,12 @@ THE SOFTWARE.
     <div id="map_container"></div>
 
     <script>
-     escher.libs.d3_json('static/data/iJO1366.Central metabolism.json', function (error, data) {
+     escher.libs.d3_json('static/data/maps/E coli core.Core metabolism.json', function (error, data) {
        if (error) console.warn(error);
        var options = { menu: 'all', fill_screen: true };
+       var modelDataUrl = 'static/data/models/E coli core.json'
        var b = escher.Builder(data, null, null, escher.libs.d3_select('#map_container'), options);
+       var m = escher.libs.d3_json(modelDataUrl, data => b.load_model(data));
      });
     </script>
   </body>
