@@ -1,3 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Flux Analysis</title>
+  <!-- Load Pyodide -->
+  <script>
+    var pyodideWorker = new Worker('static/js/webworker.js');
+  </script>
+  <!-- Escher files -->
+  <script src="static/js/escher.min.js"></script>
+  <!-- Main files -->
+  <script src="static/js/main.js"></script>
+  <link rel="stylesheet" href="static/css/main.css">
+</head>
+
+<body>
+  <div id="map_container"></div>
+  <div id="messages" class="status-board"></div>
+  <script>
+    init();
+  </script>
+</body>
+
+</html>
 <!-- index.html - A simple embedded Escher map.
 
 The MIT License (MIT)
@@ -26,24 +52,3 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 -->
-
-<!DOCTYPE html>
-<html>
-  <!-- Escher files -->
-  <script src="static/js/escher.min.js" charset="utf-8"></script>
-
-  <meta charset="utf-8"/>
-  <body>
-    <div id="map_container"></div>
-
-    <script>
-     escher.libs.d3_json('static/data/maps/e_coli_core.Core-metabolism.json', function (error, data) {
-       if (error) console.warn(error);
-       var options = { menu: 'all', fill_screen: true };
-       var modelDataUrl = 'static/data/models/e_coli_core.json'
-       var b = escher.Builder(data, null, null, escher.libs.d3_select('#map_container'), options);
-       var m = escher.libs.d3_json(modelDataUrl, data => b.load_model(data));
-     });
-    </script>
-  </body>
-</html>
