@@ -17,3 +17,39 @@
     font-size: 18px;
     font-family: "Source Sans Pro",Calibri,Candara,Arial,sans-serif;
 }
+
+#control-board {
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    z-index: 1000;
+}
+
+#control-board div {
+    float: left;
+}
+
+.control-button {
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 3px;
+    font-size: 18px;
+    font-family: "Source Sans Pro",Calibri,Candara,Arial,sans-serif;
+    border: 1px solid #0066cc;
+    background-color: #0099cc;
+    color: #ffffff;
+    padding: 5px 10px;
+}
+
+.control-button:hover {
+    border: 1px solid #0099cc;
+    background-color: #00aacc;
+    color: #ffffff;
+    padding: 5px 10px;
+}
+
+.control-button:disabled {
+    border: 1px solid #999999;
+    background-color: #cccccc;
+    color: #666666;
+}

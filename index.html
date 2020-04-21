@@ -18,6 +18,18 @@
 <body>
   <div id="map_container"></div>
   <div id="messages" class="status-board"></div>
+  <div id="control-board">
+    <div>
+      <input type="checkbox" id="FBA-run-on-load" name="FBA-run-on-load" value="1" checked>
+      <label for="FBA-run-on-load">Run on loaded page</label><br>
+      <button id="FBA-button" class="control-button">Run FBA</button>
+    </div>
+    <div>
+      <input type="checkbox" id="FVA-run-on-load" name="FVA-run-on-load" value="1">
+      <label for="FVA-run-on-load">Run on loaded page</label><br>
+      <button id="FVA-button" class="control-button">Run FVA</button>
+    </div>
+  </div>
   <script>
     init();
   </script>

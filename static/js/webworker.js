@@ -16,7 +16,6 @@ fluxEnvLoader
 
 var onmessage = function(e) { // eslint-disable-line no-unused-vars
   fluxEnvLoader.then(() => {
-    self.postMessage({"type":"status", "results": "Started FBA..."});
     const data = e.data;
     const keys = Object.keys(data);
     for (let key of keys) {
