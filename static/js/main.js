@@ -4,6 +4,7 @@ function htmlToElement(html) {
     template.innerHTML = html;
     return template.content.firstChild;
 }
+
 function addMessage(message) {
     var container = document.getElementById("messages");
     var messageEl = htmlToElement('<div>' + message + '</div>');
@@ -77,13 +78,35 @@ model = from_json(model_json_string)
 print("Model loaded!")
 {'result_type':'model_loaded'}`;
 
-var program_run_fba = `fba_results = model.optimize()
-{'result_type':'fba_fluxes', 'result': fba_results.fluxes.to_json()}`;
+var send_bounds = `from js import reactions_bounds_json
+import json
+reaction_bounds = json.loads(reactions_bounds_json)
+for reaction, bounds in reaction_bounds.items():
+    cur_reaction = model.reactions.get_by_id(reaction)
+    if bounds == "knockout":
+        cur_reaction.knock_out()
+    else:
+        cur_reaction.bounds = bounds
+if "last" in locals():
+    if last == "FBA":
+        fba_results, message, last = run_fba(model)
+    elif last == "FVA":
+        fva_results, message, last = run_fva(model)
+message`;
 
-var program_run_fva = `model.optimize()
-fva_results = flux_variability_analysis(model, fraction_of_optimum=0.5)
-fva_results = fva_results.round(3)
-{'result_type':'fva_fluxes', 'result': fva_results.to_json()}`;
+var program_run_fba = `def run_fba(model):
+    fba_results = model.optimize()
+    return fba_results, {'result_type':'fba_fluxes', 'result': fba_results.fluxes.to_json()}, "FBA"
+fba_results, message, last = run_fba(model)
+message`;
+
+var program_run_fva = `def run_fva(model):
+    model.optimize()
+    fva_results = flux_variability_analysis(model, fraction_of_optimum=0.5)
+    fva_results = fva_results.round(3)
+    return fva_results, {'result_type':'fva_fluxes', 'result': fva_results.to_json()}, "FVA"
+fva_results, message, last = run_fva(model)
+message`;
 
 function loadModelToWebWorker(parsedModel) {
     window.model_json_string = JSON.stringify(parsedModel);
@@ -99,8 +122,22 @@ function loadModelToWebWorker(parsedModel) {
     } else {
         b.callback_manager.set("cobra_init", sendModel);
     }
+}
 
-
+function sendBoundsToWebWorker(bounds) {
+    const reactions_bounds_json = JSON.stringify(bounds);
+    function sendBounds() {
+        const change_bounds_message = {
+            reactions_bounds_json: reactions_bounds_json,
+            python: send_bounds
+        };
+        pyodideWorker.postMessage(change_bounds_message)
+    }
+    if (window.cobrapy_init) {
+        sendBounds();
+    } else {
+        b.callback_manager.set("cobra_init", sendBounds);
+    }
 }
 
 function init() {
