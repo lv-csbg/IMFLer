@@ -1,3 +1,117 @@
+const preact = escher.libs.preact;
+const h = preact.createElement;
+const Component = preact.Component;
+
+var tooltipStyle = {
+    'min-width': '40px',
+    'min-height': '10px',
+    'border-radius': '2px',
+    'border': '1px solid #b58787',
+    'padding': '7px',
+    'background-color': '#fff',
+    'text-align': 'left',
+    'font-size': '16px',
+    'font-family': 'sans-serif',
+    'color': '#111',
+    'box-shadow': '4px 6px 20px 0px rgba(0, 0, 0, 0.4)'
+};
+
+class FBAFVATooltip extends Component {
+    componentShouldUpdate() {
+        return false;
+    }
+
+    componentWillReceiveProps(nextProps) {
+    }
+
+    applyBounds() {
+        const reactionId = document.querySelector(".default-tooltip div.id").innerText
+        const bounds = [
+            Number(document.querySelector(".default-tooltip input.lower_bound").value),
+            Number(document.querySelector(".default-tooltip input.upper_bound").value)
+        ];
+        var result = {};
+        result[reactionId] = bounds;
+        b.current_reaction_bounds[reactionId] = bounds;
+        return sendBoundsToWebWorker(result);
+    }
+    render() {
+        // var decomp = this.decompartmentalizeCheck(this.props.biggId, this.props.type);
+        // var biggButtonText = 'Open ' + decomp + ' in BiGG Models.';
+        if (this.props.type === 'reaction') {
+            let lower_bound = window.b.current_reaction_bounds ? window.b.current_reaction_bounds[this.props.biggId][0]: -10000;
+            let upper_bound = window.b.current_reaction_bounds ? window.b.current_reaction_bounds[this.props.biggId][1]: 10000;
+            return (0, h)(
+                'div',
+                { className: 'default-tooltip' },
+                (0, h)(
+                    'div',
+                    { className: 'id' },
+                    this.props.biggId
+                ),
+                (0, h)(
+                    'div',
+                    { className: 'name' },
+                    'name: ',
+                    this.props.name
+                ),
+                (0, h)(
+                    'div',
+                    { className: 'data' },
+                    'data: ',
+                    this.props.data && this.props.data !== '(nd)' ? this.props.data : 'no data'
+                ),
+                (0, h)(
+                    'div',
+                    { className: 'labels' },
+                    (0, h)(
+                        'div',
+                        { className: 'labels' },
+                        'Lower bound'
+                    ),
+                    (0, h)(
+                        'div',
+                        { className: 'labels' },
+                        'Upper bound'
+                    )
+                ),
+                (0, h)(
+                    'div',
+                    { className: 'inputs' },
+                    (0, h)(
+                        'input',
+                        { className: 'lower_bound', type: 'text', value: lower_bound},
+                    ),
+                    (0, h)(
+                        'input',
+                        { className: 'upper_bound', type: 'text', value: upper_bound
+                     },
+                    )
+                ),
+                  (0, h)(
+                    'button',
+                    { onClick: this.applyBounds },
+                    'Apply bounds'
+                  ),
+                (0, h)(
+                    'div',
+                    { className: 'top-right' },
+                    // (0, h)(
+                    //   'div',
+                    //   { className: 'type-label' },
+                    //   this.capitalizeFirstLetter(this.props.type)
+                    // ),
+                    (0, h)(
+                        'a',
+                        { onClick: this.props.disableTooltips },
+                        'Disable Tooltips'
+                    )
+                )
+            );
+        };
+    };
+}
+
 function htmlToElement(html) {
     var template = document.createElement('template');
     html = html.trim(); // Never return a text node of whitespace as the result
@@ -145,14 +259,17 @@ function init() {
     pyodideWorker.postMessage({ python: program_init });
     escher.libs.d3_json('static/data/maps/e_coli_core.Core-metabolism.json', function (error, data) {
         if (error) console.warn(error);
-        var options = { menu: 'all', fill_screen: true };
+        var options = { menu: 'all', fill_screen: true, tooltip_component: FBAFVATooltip };
         var modelDataUrl = 'static/data/models/e_coli_core.json';
         window.b = escher.Builder(data, null, null, escher.libs.d3_select('#map_container'), options);
         b.callback_manager.set("load_model", loadModelToWebWorker);
         fetch(modelDataUrl)
             .then((x) => x.json())
             .then((json) => {
-                window.model = json;
+                window.b.default_model = json;
+                const bounds = {}
+                json.reactions.forEach(x => bounds[x.id] = [x.lower_bound, x.upper_bound])
+                window.b.current_reaction_bounds = bounds;
                 b.load_model(json);
             });
 
