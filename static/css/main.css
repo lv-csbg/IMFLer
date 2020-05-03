@@ -53,3 +53,11 @@
     background-color: #cccccc;
     color: #666666;
 }
+
+div.labels {
+    margin-top: 0.5em;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 12px;
+}
