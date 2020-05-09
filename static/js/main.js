@@ -169,7 +169,8 @@ pyodideWorker.onmessage = (e) => {
         }
         if (results.result_type === 'fva_fluxes') {
             const fva_results = JSON.parse(results.result)
-            b.set_reaction_data([fva_results.minimum, fva_results.maximum]);
+            b.set_fva_data([fva_results.minimum, fva_results.maximum]);
+            // b.set_reaction_data([fva_results]);
             addMessage("Finished FVA");
             enableButton(document.getElementById("FVA-button"), "Run FVA");
         }
