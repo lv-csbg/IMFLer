@@ -42,18 +42,62 @@
 //         this.default_set_reaction_data(data)
 //     }
 // }
+const reaction_scale_preset_fva = (function() {
+    const green = (function () {
+        var res = [
+            { type: 'value', value: 1000.0000000000001, color: '#008000', size: 8 },
+        ]
+        const min = 8;
+        const max = 32;
+        for (var i = min; i <= max; i++) {
+            res.push({
+                type: 'value', value: 1000.0 + 10**((i/min) - 1), color: '#008000', size: i
+            })
+        }
+        return res
+    })()
+    const red = (function () {
+        var res = [
+            { type: 'value', value: -1000.0000000000001, color: '#ff0000', size: 8 },
+        ]
+        const min = 8;
+        const max = 32;
+        for (var i = min; i <= max; i++) {
+            res.push({
+                type: 'value', value: -1000.0 - 10**((i/min) - 1), color: '#ff0000', size: i
+            })
+        }
+        return res
+    })()
+    
+    const yellow = (function () {
+        var res = [
+            { type: 'value', value: -999.9999999999999, color: '#ffff00', size: 8 },
+            { type: 'value', value: 999.9999999999999, color: '#ffff00', size: 35 },
+        ]
+        const min = 8;
+        const max = 34;
+        for (var i = min; i <= max; i++) {
+            res.push({
+                type: 'value', value: -1000.0 + 10**((i/min) - 1), color: '#ffff00', size: i
+            })
+        }
+        return res
+    })()
+    return [].concat(red, yellow, green)
+})()
+
 escher.Builder.prototype.set_fva_data = function set_fva_data(data) {
     console.log("Started set_fva_data");
     // START
     this.settings.set('reaction_data', data)
-    this.settings.set('reaction_compare_style', "diff")
-
     // clear gene data
     if (data) {
         this.settings._options.gene_data = null
     }
-
+    const reactionStyles = this.settings.get('reaction_styles')
     var messageFn = this._reactionCheckAddAbs()
+    this.settings.set('reaction_styles', reactionStyles)
 
     this._updateFVAData(true, true)
 
@@ -90,9 +134,22 @@ function abs(x, takeAbs) {
     return takeAbs ? Math.abs(x) : x
 }
 
-function diff(x, y, takeAbs) {
-    if (takeAbs) return Math.abs(y - x)
-    else return y - x
+function FVAdiff(x, y, takeAbs) {
+    var res
+    var range = Math.abs(y - x)
+    if (x < 0 && y <= 0) {
+        // All Negative, Red
+        res = -1000.0 - range
+    } else if (x < 0 && y > 0) {
+        // Both, Yellow
+        res = -1000.0 + range
+    } else if (x >= 0 && y > 0) {
+        // All Positive, Green
+        res = 1000.0 + range
+    } else {
+        res = null
+    }
+    return res
 }
 
 function fold(x, y, takeAbs) {
@@ -133,7 +190,7 @@ function floatForData(d, styles, compareStyle) {
         if (fs[0] === null || fs[1] === null) return null
 
         if (compareStyle === 'diff') {
-            return diff(fs[0], fs[1], takeAbs)
+            return FVAdiff(fs[0], fs[1], takeAbs)
         } else if (compareStyle === 'fold') {
             return checkFinite(fold(fs[0], fs[1], takeAbs))
         } else if (compareStyle === 'log2_fold') {

@@ -163,12 +163,38 @@ pyodideWorker.onmessage = (e) => {
     if (results) {
         console.log('pyodideWorker return results: ', results);
         if (results.result_type === 'fba_fluxes') {
+            if (typeof b._savedOptions === "object") {
+                for (const option in b._savedOptions) {
+                    b.settings.set(option, b._savedOptions[option])
+                }
+            }
             b.set_reaction_data(JSON.parse(results.result));
             addMessage("Finished FBA");
             enableButton(document.getElementById("FBA-button"), "Run FBA");
         }
         if (results.result_type === 'fva_fluxes') {
             const fva_results = JSON.parse(results.result)
+            const optionsToSave = [
+                "reaction_scale", 
+                "reaction_scale_preset", 
+                "reaction_compare_style",
+                "reaction_styles",
+            ]
+            _savedOptions = {}
+            for (const option of optionsToSave) {
+                _savedOptions[option] = b.settings.get(option)
+            }
+            b._savedOptions = _savedOptions
+            const fva_options = {
+                reaction_scale: reaction_scale_preset_fva,
+                reaction_scale_preset: false,
+                reaction_compare_style: "diff",
+                reaction_styles: [ "color", "text", "size" ],
+            }
+            for (const option in fva_options) {
+                b.settings.set(option, fva_options[option])
+            }
+            b.has_custom_reaction_styles = true
             b.set_fva_data([fva_results.minimum, fva_results.maximum]);
             // b.set_reaction_data([fva_results]);
             addMessage("Finished FVA");
