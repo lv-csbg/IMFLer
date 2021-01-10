@@ -5,7 +5,7 @@ This is a web-based tool called *an Interactive Metabolic FLux visualiser and an
 It builds upon several technologies:
 * `Escher` &#8212; a web-based tool for metabolic maps
     * https://github.com/zakandrewking/escher
-* Adapted `Pyodide` &#8212; compiled to WebAssembly Python 3.7, with many scientific packages, see 
+* Adapted `Pyodide` 0.16.1 &#8212; Python 3.8 with many scientific packages, compiled to WebAssembly, see
     * the adapted version https://github.com/lv-csbg/pyodide
     * the original project https://github.com/iodide-project/pyodide
 * `cobrapy` &#8212; a Python package for constraint-based modeling
