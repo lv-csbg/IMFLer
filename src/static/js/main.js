@@ -142,6 +142,32 @@ function enableButton(button, message) {
     button.innerHTML = message;
 }
 
+function getCurrentStyleOptions() {
+    const optionsToSave = [
+        "reaction_scale", 
+        "reaction_scale_preset", 
+        "reaction_compare_style",
+        "reaction_styles",
+    ]
+    var savedOptions = {}
+    for (const option of optionsToSave) {
+        savedOptions[option] = b.settings.get(option)
+    }
+    return savedOptions
+}
+
+function setSavedStyleOptions(newType) {
+    if (typeof b._allSavedOptions === "object") {
+        var curType = b._curType;
+        b._allSavedOptions[curType] = getCurrentStyleOptions();
+        var savedOptions = b._allSavedOptions[newType];
+        for (const option in savedOptions) {
+            b.settings.set(option, savedOptions[option])
+        }
+        b._curType = newType;
+    }
+}
+
 pyodideWorker.onerror = (e) => {
     console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`)
 }
@@ -153,9 +179,11 @@ pyodideWorker.onmessage = (e) => {
         addMessage(results)
         if (results === "Packages loaded") {
             if (document.getElementById("FBA-run-on-load").checked) {
+                b._curType = "FBA";
                 document.getElementById("FBA-button").onclick();
             }
             if (document.getElementById("FVA-run-on-load").checked) {
+                b._curType = "FVA";
                 document.getElementById("FVA-button").onclick();
             }
         }
@@ -163,37 +191,15 @@ pyodideWorker.onmessage = (e) => {
     if (results) {
         console.log('pyodideWorker return results: ', results);
         if (results.result_type === 'fba_fluxes') {
-            if (typeof b._savedOptions === "object") {
-                for (const option in b._savedOptions) {
-                    b.settings.set(option, b._savedOptions[option])
-                }
-            }
+            setSavedStyleOptions("FBA");
             b.set_reaction_data(JSON.parse(results.result));
             addMessage("Finished FBA");
             enableButton(document.getElementById("FBA-button"), "Run FBA");
+            
         }
         if (results.result_type === 'fva_fluxes') {
-            const fva_results = JSON.parse(results.result)
-            const optionsToSave = [
-                "reaction_scale", 
-                "reaction_scale_preset", 
-                "reaction_compare_style",
-                "reaction_styles",
-            ]
-            _savedOptions = {}
-            for (const option of optionsToSave) {
-                _savedOptions[option] = b.settings.get(option)
-            }
-            b._savedOptions = _savedOptions
-            const fva_options = {
-                reaction_scale: reaction_scale_preset_fva,
-                reaction_scale_preset: false,
-                reaction_compare_style: "diff",
-                reaction_styles: [ "color", "text", "size" ],
-            }
-            for (const option in fva_options) {
-                b.settings.set(option, fva_options[option])
-            }
+            setSavedStyleOptions("FVA");
+            const fva_results = JSON.parse(results.result);
             b.has_custom_reaction_styles = true
             b.set_fva_data([fva_results.minimum, fva_results.maximum]);
             // b.set_reaction_data([fva_results]);
@@ -288,6 +294,19 @@ function sendBoundsToWebWorker(bounds) {
     }
 }
 
+function initSavedStyleOptions() {
+    var _allSavedOptions = {};
+    _allSavedOptions["FBA"] = getCurrentStyleOptions();
+    const default_fva_options = {
+        reaction_scale: reaction_scale_preset_fva,
+        reaction_scale_preset: false,
+        reaction_compare_style: "diff",
+        reaction_styles: [ "color", "text", "size" ],
+    }
+    _allSavedOptions["FVA"] = default_fva_options;
+    b._allSavedOptions = _allSavedOptions;
+}
+
 function init() {
     addMessage("Python initialisation started...");
     pyodideWorker.postMessage({ python: program_init });
@@ -306,7 +325,7 @@ function init() {
                 window.b.current_reaction_bounds = bounds;
                 b.load_model(json);
             });
-
+        initSavedStyleOptions();
     });
     document.getElementById("FBA-button").onclick = function () {
         disableButton(this, "Running FBA");
