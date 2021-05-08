@@ -195,16 +195,16 @@ pyodideWorker.onmessage = (e) => {
             b.set_reaction_data(JSON.parse(results.result));
             addMessage("Finished FBA");
             enableButton(document.getElementById("FBA-button"), "Run FBA");
-            
+            b.callback_manager.set("update_data", updateLegend);
         }
         if (results.result_type === 'fva_fluxes') {
             setSavedStyleOptions("FVA");
             const fva_results = JSON.parse(results.result);
             b.has_custom_reaction_styles = true
             b.set_fva_data([fva_results.minimum, fva_results.maximum]);
-            // b.set_reaction_data([fva_results]);
             addMessage("Finished FVA");
             enableButton(document.getElementById("FVA-button"), "Run FVA");
+            b.callback_manager.set("update_data", updateLegend);
         }
         if (results.result_type === 'cobra_init') {
             window.cobrapy_init = true;
@@ -353,5 +353,211 @@ function init() {
             b.callback_manager.set("model_loaded", sendFVA);
         }
     }
+}
 
+function updateLegend(curType) {
+    let svg;
+    var legend = document.querySelector("svg.legend");
+    if (legend !== null) {
+        legend.remove()
+    }
+    if (typeof(curType) !== "string") {
+        curType = b._curType;
+    }
+    if (curType === "FBA") {
+        svg = createFBALegend();
+    } else if (curType === "FVA") {
+        svg = createFVALegend();
+    } else {
+        console.error(`updateLegend failed, b._curType / curType is not recognized. ${curType}`);
+    }
+    var zoomedArea = document.querySelector("g.zoom-g");
+    zoomedArea.appendChild(svg.node());
+}
+
+function createFBALegend({
+    title = "Flux, absolute value (mmol gDW-1 hr-1)",
+    xAxisTickOutsideLength = 6,
+    width = 320,
+    marginTop = 18,
+    marginLeft = 5,
+    marginRight = 5,
+    marginBottom = 16 + xAxisTickOutsideLength,
+    height = 44 + xAxisTickOutsideLength
+} = {}) {
+    const gradientId = "FBAgradient";
+    var svg = d3.create("svg")
+        .attr("class", "legend")
+        .attr("transform", "translate(4500,500) scale(4)")
+        .attr("height", height)
+        .attr("width", width);
+    var defs = svg.append("defs");
+
+    svg.append("rect")
+        .attr("class", "legend-gradient")
+        .attr("x", marginLeft)
+        .attr("y", marginTop)
+        .attr("width", width - marginLeft - marginRight)
+        .attr("height", height - marginTop - marginBottom)
+        .attr("fill", `url('#${gradientId}')`);
+
+    var scalePoints = getCurrentStyleOptions().reaction_scale;
+    var gradient = defs.append("linearGradient")
+        .attr("id", gradientId);
+
+    var absMinValue = Math.abs(b.map.data_statistics.reaction.min);
+    var absMaxValue = Math.abs(b.map.data_statistics.reaction.max);
+    var range = absMaxValue - absMinValue;
+
+    var sortedScalePoints = [];
+    for (const scalePoint of scalePoints) {
+        if (scalePoint.type === "min") {
+            var value = absMinValue;
+        } else if (scalePoint.type === "max") {
+            var value = absMaxValue;
+        } else if (scalePoint.type === "value") {
+            var value = scalePoint.value;
+        } else {
+            var value = NaN;
+        }
+        sortedScalePoints.push([scalePoint, value]);
+    }
+    sortedScalePoints.sort((x, y) => x[1] - y[1]);
+    for (const [scalePoint, value] of sortedScalePoints) {
+        var offset = value / range;
+        var offsetPrcnt = offset * 100.0;
+        gradient.append("stop")
+            .attr("offset", `${offsetPrcnt.toPrecision(4)}%`)
+            .attr("stop-color", scalePoint.color);
+    }
+
+    let lengthenTicks = g => g.selectAll(".tick line").attr("y1", marginTop + marginBottom - height);
+    let x = d3.scaleLinear()
+        .domain([absMinValue, absMaxValue])
+        .rangeRound([marginLeft, width - marginRight]);
+    svg.append("g")
+        .attr("transform", `translate(0,${height - marginBottom})`)
+        .call(d3.axisBottom(x))
+        .call(lengthenTicks)
+        .call(g => g.select(".domain").remove())
+        .call(g => g.append("text")
+            .attr("x", marginLeft)
+            .attr("y", marginTop + marginBottom - height - 6)
+            .attr("fill", "currentColor")
+            .attr("text-anchor", "start")
+            .attr("font-weight", "bold")
+            .attr("class", "title")
+            .text(title));
+    return svg
+}
+
+function calcRightTopCanvasPoint() {
+    const canvas = document.querySelector("#canvas");
+    const width = canvas.getAttribute("width");
+    const height = canvas.getAttribute("height");
+    const x = document.querySelector("#canvas").__data__.x;
+    const y = document.querySelector("#canvas").__data__.y;
+    return {
+        "x": Number(width) + x,
+        "y": y
+    }
+}
+
+function createFVALegend({
+    maxStrokeHeight = 34,
+    titleFontSize = 50,
+    xAxisLabelSize = 18,
+    height = (maxStrokeHeight + titleFontSize + xAxisLabelSize + 20) * 3,
+    labelWrap = 30,
+    shapeWidth = 70,
+    shapePadding = 80,
+    width = shapePadding * 29,
+    svgX = calcRightTopCanvasPoint().x - width - 10,
+    svgY = calcRightTopCanvasPoint().y + 10
+} = {}) {
+    var sublegendHeight = height / 3;
+    var scalePoints = getCurrentStyleOptions().reaction_scale
+
+    var classesParameters = [{
+            "className": "reverse",
+            "title": "Negative fluxes only, FVA range value (mmol gDW-1 hr-1)",
+            "getRangeFunction": x => -(x.value + 1000.0),
+            "fScalePoints": scalePoints.filter(x => x.value < -1000.0)
+        },
+        {
+            "className": "ambidirectional",
+            "title": "Ambidirectional fluxes, FVA range value (mmol gDW-1 hr-1)",
+            "getRangeFunction": x => x.value + 1000.0,
+            "fScalePoints": scalePoints.filter(x => x.value >= -1000.0 && x.value <= 1000.0)
+        },
+        {
+            "className": "forward",
+            "title": "Positive fluxes only, FVA range value (mmol gDW-1 hr-1)",
+            "getRangeFunction": x => x.value - 1000.0,
+            "fScalePoints": scalePoints.filter(x => x.value >= 1000.0)
+        }
+    ];
+
+    var svg = d3.create("svg")
+        .attr("class", "legend")
+        .attr("transform", `translate(${svgX},${svgY}) scale(1)`)
+        .attr("height", height)
+        .attr("width", width);
+
+    var defs = svg.append("defs");
+    var legendCSS = `
+    .legendSizeLine text.title {
+      font-size: ${titleFontSize}px;
+    }
+    .legendSizeLine text.label {
+      font-size: ${xAxisLabelSize}px;
+    }
+    `;
+
+    for (const [index, {
+            className,
+            title,
+            fScalePoints,
+            getRangeFunction
+        }] of classesParameters.entries()) {
+        var classColor = fScalePoints[0].color;
+        var rangeSizeValues = fScalePoints.map(x => [getRangeFunction(x), x.size]).sort((x, y) => x[0] - y[0])
+        var lineSize = d3.scaleOrdinal()
+            .domain(rangeSizeValues.map(x => x[0].toFixed(1)))
+            .range(rangeSizeValues.map(x => x[1]));
+
+        svg.append("g")
+            .attr("class", `legendSizeLine ${className}`)
+            .attr("transform", `translate(0, ${(0+index)*sublegendHeight+titleFontSize+10})`)
+            .call(g => g.append("text")
+                .attr("x", 0)
+                .attr("y", -10)
+                .attr("fill", "currentColor")
+                .attr("text-anchor", "start")
+                .attr("font-weight", "bold")
+                .attr("class", "title")
+                .text(title));
+
+        var legendSizeLine = d3.legendSize()
+            .scale(lineSize)
+            .shape("line")
+            .orient("horizontal")
+            .labelWrap(labelWrap)
+            .shapeWidth(shapeWidth)
+            .labelAlign("start")
+            .shapePadding(shapePadding);
+
+        svg.select(`.legendSizeLine.${className}`)
+            .call(legendSizeLine);
+
+        legendCSS += `
+      .legendSizeLine.${className} line {
+        stroke: ${classColor};
+      }
+      `
+    }
+
+    var svgStyle = defs.append("style");
+    svgStyle.node().innerHTML = legendCSS;
+    return svg
 }

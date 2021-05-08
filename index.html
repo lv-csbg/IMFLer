@@ -4,12 +4,16 @@
 <head>
   <meta charset="utf-8" />
   <title>Flux Analysis</title>
+  <link rel="icon" type="image/png" href="static/images/favicon-196.png">
   <!-- Load Pyodide -->
   <script>
     var pyodideWorker = new Worker('static/js/webworker.js');
   </script>
   <!-- Escher files -->
   <script src="static/js/escher.min.js"></script>
+  <!-- d3 for the legend -->
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js" integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA==" crossorigin="anonymous"></script>
   <!-- Escher FVA AddOn -->
   <script src="static/js/escher-fva-addon.js"></script>
   <!-- Main files -->
