@@ -395,7 +395,6 @@ function updateLegend(curType) {
 }
 
 function createFBALegend({
-    title = "Flux, absolute value (mmol gDW-1 hr-1)",
     xAxisTickOutsideLength = 6,
     width = 320,
     marginTop = 18,
@@ -404,6 +403,15 @@ function createFBALegend({
     marginBottom = 16 + xAxisTickOutsideLength,
     height = 44 + xAxisTickOutsideLength
 } = {}) {
+    let isAbsolute;
+    var minValue = b.map.data_statistics.reaction.min;
+    var maxValue = b.map.data_statistics.reaction.max;
+    if (minValue < 0) {
+      isAbsolute = "";
+    } else {
+      isAbsolute = "absolute ";
+    }
+    var title = `Flux, ${isAbsolute}value (mmol gDW-1 hr-1)`;
     const gradientId = "FBAgradient";
     var svg = d3.create("svg")
         .attr("class", "legend")
@@ -424,16 +432,12 @@ function createFBALegend({
     var gradient = defs.append("linearGradient")
         .attr("id", gradientId);
 
-    var absMinValue = Math.abs(b.map.data_statistics.reaction.min);
-    var absMaxValue = Math.abs(b.map.data_statistics.reaction.max);
-    var range = absMaxValue - absMinValue;
-
     var sortedScalePoints = [];
     for (const scalePoint of scalePoints) {
         if (scalePoint.type === "min") {
-            var value = absMinValue;
+            var value = minValue;
         } else if (scalePoint.type === "max") {
-            var value = absMaxValue;
+            var value = maxValue;
         } else if (scalePoint.type === "value") {
             var value = scalePoint.value;
         } else {
@@ -442,8 +446,10 @@ function createFBALegend({
         sortedScalePoints.push([scalePoint, value]);
     }
     sortedScalePoints.sort((x, y) => x[1] - y[1]);
+    
+    var range = maxValue - minValue;
     for (const [scalePoint, value] of sortedScalePoints) {
-        var offset = value / range;
+        var offset = (value - minValue) / range;
         var offsetPrcnt = offset * 100.0;
         gradient.append("stop")
             .attr("offset", `${offsetPrcnt.toPrecision(4)}%`)
@@ -452,7 +458,7 @@ function createFBALegend({
 
     let lengthenTicks = g => g.selectAll(".tick line").attr("y1", marginTop + marginBottom - height);
     let x = d3.scaleLinear()
-        .domain([absMinValue, absMaxValue])
+        .domain([minValue, maxValue])
         .rangeRound([marginLeft, width - marginRight]);
     svg.append("g")
         .attr("transform", `translate(0,${height - marginBottom})`)
