@@ -561,3 +561,10 @@ function createFVALegend({
     svgStyle.node().innerHTML = legendCSS;
     return svg
 }
+
+function clearOther(x, selector="div#control-board input") {
+    if (x.checked === true) {
+        document.querySelectorAll(selector).forEach(a => a.checked = false);
+        x.checked = true;
+    }
+}
