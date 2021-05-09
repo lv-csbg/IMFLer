@@ -165,6 +165,9 @@ function setSavedStyleOptions(newType) {
             b.settings.set(option, savedOptions[option])
         }
         b._curType = newType;
+    } else {
+        initSavedStyleOptions();
+        setSavedStyleOptions(newType);
     }
 }
 
@@ -179,11 +182,9 @@ pyodideWorker.onmessage = (e) => {
         addMessage(results)
         if (results === "Packages loaded") {
             if (document.getElementById("FBA-run-on-load").checked) {
-                b._curType = "FBA";
                 document.getElementById("FBA-button").onclick();
             }
             if (document.getElementById("FVA-run-on-load").checked) {
-                b._curType = "FVA";
                 document.getElementById("FVA-button").onclick();
             }
         }
@@ -191,16 +192,18 @@ pyodideWorker.onmessage = (e) => {
     if (results) {
         console.log('pyodideWorker return results: ', results);
         if (results.result_type === 'fba_fluxes') {
+            const fba_results = JSON.parse(results.result);
             setSavedStyleOptions("FBA");
-            b.set_reaction_data(JSON.parse(results.result));
+            // b.has_custom_reaction_styles = false;
+            b.set_reaction_data(fba_results);
             addMessage("Finished FBA");
             enableButton(document.getElementById("FBA-button"), "Run FBA");
             b.callback_manager.set("update_data", updateLegend);
         }
         if (results.result_type === 'fva_fluxes') {
-            setSavedStyleOptions("FVA");
             const fva_results = JSON.parse(results.result);
-            b.has_custom_reaction_styles = true
+            setSavedStyleOptions("FVA");
+            b.has_custom_reaction_styles = true;
             b.set_fva_data([fva_results.minimum, fva_results.maximum]);
             addMessage("Finished FVA");
             enableButton(document.getElementById("FVA-button"), "Run FVA");
@@ -295,16 +298,30 @@ function sendBoundsToWebWorker(bounds) {
 }
 
 function initSavedStyleOptions() {
-    var _allSavedOptions = {};
-    _allSavedOptions["FBA"] = getCurrentStyleOptions();
+    const reaction_scale_preset_fba = [
+        {type: "min", color: "#c8c8c8", size: 12},
+        {type: "value", value: 0.01, color: "#9696ff", size: 16},
+        {type: "value", value: 20, color: "#209123", size: 20},
+        {type: "max", color: "#ff0000", size: 25}
+    ]
+    const default_fba_options = {
+        reaction_scale: reaction_scale_preset_fba,
+        reaction_scale_preset: "GaBuGeRd",
+        reaction_compare_style: "log2_fold",
+        reaction_styles: ["color", "size", "text"],
+    }
     const default_fva_options = {
         reaction_scale: reaction_scale_preset_fva,
         reaction_scale_preset: false,
         reaction_compare_style: "diff",
-        reaction_styles: [ "color", "text", "size" ],
+        reaction_styles: ["color", "text", "size"],
     }
+    var _allSavedOptions = {};
+    _allSavedOptions["None"] = getCurrentStyleOptions();
+    _allSavedOptions["FBA"] = default_fba_options;
     _allSavedOptions["FVA"] = default_fva_options;
     b._allSavedOptions = _allSavedOptions;
+    b._curType = "None";
 }
 
 function init() {
@@ -361,13 +378,15 @@ function updateLegend(curType) {
     if (legend !== null) {
         legend.remove()
     }
-    if (typeof(curType) !== "string") {
+    if (typeof curType !== "string") {
         curType = b._curType;
     }
     if (curType === "FBA") {
         svg = createFBALegend();
     } else if (curType === "FVA") {
         svg = createFVALegend();
+    } else if (curType === "None") {
+      return
     } else {
         console.error(`updateLegend failed, b._curType / curType is not recognized. ${curType}`);
     }
