@@ -25,7 +25,7 @@ var onmessage = function(e) { // eslint-disable-line no-unused-vars
         self[key] = data[key];
       }
     }
-    self.pyodide.runPythonAsync(data.python, () => {console.log("PYAsync callback")}, () => {console.log("PYAsync ERROR callback")})
+    self.pyodide.runPythonAsync(data.python, () => {console.log("PYAsync callback")}, () => {console.error("PYAsync ERROR callback")})
         .then((results) => {
           console.log("Results message", results); self.postMessage({results}); })
         .catch((err) => {

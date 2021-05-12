@@ -130,6 +130,7 @@ function addMessage(message) {
     var container = document.getElementById("messages");
     var messageEl = htmlToElement('<div>' + message + '</div>');
     container.appendChild(messageEl);
+    return messageEl;
 }
 
 function disableButton(button, message) {
@@ -172,7 +173,7 @@ function setSavedStyleOptions(newType) {
 }
 
 pyodideWorker.onerror = (e) => {
-    console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`)
+    console.error(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`)
 }
 
 pyodideWorker.onmessage = (e) => {
@@ -190,7 +191,7 @@ pyodideWorker.onmessage = (e) => {
         }
     }
     if (results) {
-        console.log('pyodideWorker return results: ', results);
+        console.log('pyodideWorker return results:', results);
         if (results.result_type === 'fba_fluxes') {
             const fba_results = JSON.parse(results.result);
             setSavedStyleOptions("FBA");
@@ -218,7 +219,15 @@ pyodideWorker.onmessage = (e) => {
             b.callback_manager.run("model_loaded");
         }
     } else if (error) {
-        console.log('pyodideWorker error: ', error)
+        let errorMsg;
+        console.error('pyodideWorker error:', error);
+        if (error === "Maximum call stack size exceeded") {
+            errorMsg = `${error}<br>Your browser does not support deep enough recursion.<br>Try Firefox!`
+        } else {
+            errorMsg = error;
+        }
+        let errorMessage = addMessage(errorMsg);
+        errorMessage.className = "error";
     }
 }
 

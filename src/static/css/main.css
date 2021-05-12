@@ -18,6 +18,10 @@
     font-family: "Source Sans Pro",Calibri,Candara,Arial,sans-serif;
 }
 
+.status-board div.error{
+    background-color: red;
+}
+
 #control-board {
     bottom: 0;
     right: 0;
