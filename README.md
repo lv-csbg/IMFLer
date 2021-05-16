@@ -39,9 +39,9 @@ var newSettings =
   "model": "https://escher.github.io/1-0-0/6/models/Escherichia%20coli/iJO1366.json",
   "map": "https://escher.github.io/1-0-0/6/maps/Escherichia%20coli/iJO1366.Central%20metabolism.json"
 }
-var newURI = encodeURI(`${window.location.origin}/?settings=${JSON.stringify(newSettings)}`);
+var newURI = encodeURI(`${window.location.origin}${window.location.pathname}?settings=${JSON.stringify(newSettings)}`);
 window.location.href = newURI;
 ```
 The resulting URL in the example would be:
 
-https://lv-csbg.github.io/?settings=%7B%22model%22:%22https://escher.github.io/1-0-0/6/models/Escherichia%2520coli/iJO1366.json%22,%22map%22:%22https://escher.github.io/1-0-0/6/maps/Escherichia%2520coli/iJO1366.Central%2520metabolism.json%22%7D
+https://lv-csbg.github.io/flux-analysis/?settings=%7B%22model%22:%22https://escher.github.io/1-0-0/6/models/Escherichia%2520coli/iJO1366.json%22,%22map%22:%22https://escher.github.io/1-0-0/6/maps/Escherichia%2520coli/iJO1366.Central%2520metabolism.json%22%7D
