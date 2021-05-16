@@ -410,7 +410,10 @@ function createFBALegend({
     marginLeft = 5,
     marginRight = 5,
     marginBottom = 16 + xAxisTickOutsideLength,
-    height = 44 + xAxisTickOutsideLength
+    height = 44 + xAxisTickOutsideLength,
+    svgX = calcRightTopCanvasPoint().x - width - 1200,
+    svgY = calcRightTopCanvasPoint().y + 150,
+    svgScale = 4
 } = {}) {
     let isAbsolute;
     var minValue = b.map.data_statistics.reaction.min;
@@ -424,7 +427,7 @@ function createFBALegend({
     const gradientId = "FBAgradient";
     var svg = d3.create("svg")
         .attr("class", "legend")
-        .attr("transform", "translate(4500,500) scale(4)")
+        .attr("transform", `translate(${svgX},${svgY}) scale(${svgScale})`)
         .attr("height", height)
         .attr("width", width);
     var defs = svg.append("defs");
@@ -507,7 +510,8 @@ function createFVALegend({
     shapePadding = 80,
     width = shapePadding * 29,
     svgX = calcRightTopCanvasPoint().x - width - 10,
-    svgY = calcRightTopCanvasPoint().y + 10
+    svgY = calcRightTopCanvasPoint().y + 10,
+    svgScale = 1
 } = {}) {
     var sublegendHeight = height / 3;
     var scalePoints = getCurrentStyleOptions().reaction_scale
@@ -534,7 +538,7 @@ function createFVALegend({
 
     var svg = d3.create("svg")
         .attr("class", "legend")
-        .attr("transform", `translate(${svgX},${svgY}) scale(1)`)
+        .attr("transform", `translate(${svgX},${svgY}) scale(${svgScale})`)
         .attr("height", height)
         .attr("width", width);
 
