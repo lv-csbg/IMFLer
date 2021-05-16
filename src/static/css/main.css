@@ -48,8 +48,6 @@
 .control-button:hover {
     border: 1px solid #0099cc;
     background-color: #00aacc;
-    color: #ffffff;
-    padding: 5px 10px;
 }
 
 .control-button:disabled {
@@ -64,4 +62,10 @@ div.labels {
     justify-content: space-between;
     font-weight: bold;
     font-size: 12px;
+}
+
+button.save-results {
+    font-size: 12px;
+    padding: 2px;
+    float: right;
 }

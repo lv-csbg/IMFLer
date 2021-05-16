@@ -201,6 +201,17 @@ function fetchFVA() {
     .then(fva_results => setFVAResults(fva_results));
 }
 
+function addMessageWithButton(res, message, type) {
+    let hash = res.hash();
+    let hashId = "h" + hash;
+    b._saved_results[hashId] = res;
+    addMessage(`${message} <button id='${hashId}' class='control-button save-results'>Save results</button>`);
+    document.querySelector(`#${hashId}`).addEventListener('click', (button) => {
+        let dateString = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
+        downloadToFile(b._saved_results[hashId], `IMFLer-${type}-results-${dateString}.json`, 'application/json');
+    });
+}
+
 pyodideWorker.onerror = (e) => {
     console.error(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`)
 }
@@ -224,13 +235,13 @@ pyodideWorker.onmessage = (e) => {
         if (results.result_type === 'fba_fluxes') {
             const fba_results = JSON.parse(results.result);
             setFBAResults(fba_results);
-            addMessage("Finished FBA");
+            addMessageWithButton(results.result, "Finished FBA", "fba");
             enableButton(document.getElementById("FBA-button"), "Run FBA");
         }
         if (results.result_type === 'fva_fluxes') {
             const fva_results = JSON.parse(results.result);
             setFVAResults(fva_results);
-            addMessage("Finished FVA");
+            addMessageWithButton(results.result, "Finished FVA", "fva");
             enableButton(document.getElementById("FVA-button"), "Run FVA");
         }
         if (results.result_type === 'cobra_init') {
@@ -381,6 +392,7 @@ function init(settings) {
         var modelDataUrl = settings.model;
         window.b = escher.Builder(data, null, null, escher.libs.d3_select('#map_container'), options);
         b._imfler_settings = settings;
+        b._saved_results = {};
         b.callback_manager.set("load_model", loadModelToWebWorker);
         if (settings.fba_results && settings.fva_results) {
           addMessage("Both FBA and FVA results provided. Choosing to show FVA.")
