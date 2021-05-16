@@ -28,7 +28,7 @@ It builds upon several technologies:
 
 ### Visualisation settings
 IMFLer's basic default visualisation settings are encoded in a JSON file.
-It is stored as `static/data/settings.json`. You can change it in your local IMFLer version.
+It is stored as `src/static/data/settings.json`. You can change it in your local IMFLer version.
 
 You can also pass it as a GET parameter `settings` in your URL.
 
@@ -45,3 +45,16 @@ window.location.href = newURI;
 The resulting URL in the example would be:
 
 https://lv-csbg.github.io/flux-analysis/?settings=%7B%22model%22:%22https://escher.github.io/1-0-0/6/models/Escherichia%2520coli/iJO1366.json%22,%22map%22:%22https://escher.github.io/1-0-0/6/maps/Escherichia%2520coli/iJO1366.Central%2520metabolism.json%22%7D
+
+If you don't provide essential `model` and `map` parameters, default ones are going to be used.
+
+You can also provide calculated **FBA** or **FVA** results, like in this `settings` example:
+```js
+var settingsWithFBAResults = 
+{
+  "model": "static/data/models/e_coli_core.json",
+  "fba_results": "static/data/examples/reaction_data/fba_results.json"
+}
+```
+
+Please see the `src/static/data/examples/reaction_data` directory for examples of expected JSON.

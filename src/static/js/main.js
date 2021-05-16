@@ -172,6 +172,35 @@ function setSavedStyleOptions(newType) {
     }
 }
 
+function setFBAResults(fba_results) {
+    console.log("setFBAResults");
+    setSavedStyleOptions("FBA");
+    // b.has_custom_reaction_styles = false;
+    b.set_reaction_data(fba_results);
+    b.callback_manager.set("update_data", updateLegend);
+}
+
+function setFVAResults(fva_results) {
+    setSavedStyleOptions("FVA");
+    b.has_custom_reaction_styles = true;
+    b.set_fva_data([fva_results.minimum, fva_results.maximum]);
+    b.callback_manager.set("update_data", updateLegend);
+}
+
+function fetchFBA() {
+  console.log("fetchFBA");
+  fetch(b._imfler_settings.fba_results)
+    .then(response => response.json())
+    .then(fba_results => setFBAResults(fba_results));
+}
+
+function fetchFVA() {
+  console.log("fetchFVA");
+  fetch(b._imfler_settings.fva_results)
+    .then(response => response.json())
+    .then(fva_results => setFVAResults(fva_results));
+}
+
 pyodideWorker.onerror = (e) => {
     console.error(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`)
 }
@@ -194,21 +223,15 @@ pyodideWorker.onmessage = (e) => {
         console.log('pyodideWorker return results:', results);
         if (results.result_type === 'fba_fluxes') {
             const fba_results = JSON.parse(results.result);
-            setSavedStyleOptions("FBA");
-            // b.has_custom_reaction_styles = false;
-            b.set_reaction_data(fba_results);
+            setFBAResults(fba_results);
             addMessage("Finished FBA");
             enableButton(document.getElementById("FBA-button"), "Run FBA");
-            b.callback_manager.set("update_data", updateLegend);
         }
         if (results.result_type === 'fva_fluxes') {
             const fva_results = JSON.parse(results.result);
-            setSavedStyleOptions("FVA");
-            b.has_custom_reaction_styles = true;
-            b.set_fva_data([fva_results.minimum, fva_results.maximum]);
+            setFVAResults(fva_results);
             addMessage("Finished FVA");
             enableButton(document.getElementById("FVA-button"), "Run FVA");
-            b.callback_manager.set("update_data", updateLegend);
         }
         if (results.result_type === 'cobra_init') {
             window.cobrapy_init = true;
@@ -338,7 +361,11 @@ function init(settings) {
     if (searchParams.has("settings")) {
         const settingsJSON = searchParams.get("settings");
         let givenSettings = JSON.parse(settingsJSON);
-        settings = givenSettings;
+        settings = Object.assign({}, settings, givenSettings);
+    }
+    if (settings.fba_results || settings.fva_results) {
+      document.getElementById("FBA-run-on-load").checked = false;
+      document.getElementById("FBA-run-on-load").checked = false;
     }
     addMessage("Python initialisation started...");
     pyodideWorker.postMessage({
@@ -355,6 +382,17 @@ function init(settings) {
         window.b = escher.Builder(data, null, null, escher.libs.d3_select('#map_container'), options);
         b._imfler_settings = settings;
         b.callback_manager.set("load_model", loadModelToWebWorker);
+        if (settings.fba_results && settings.fva_results) {
+          addMessage("Both FBA and FVA results provided. Choosing to show FVA.")
+          console.log("settings.fba_results && settings.fva_results");
+          b.callback_manager.set("load_model", fetchFVA, settings.fba_results);
+        } else if (settings.fba_results) {
+          console.log("settings.fba_results");
+          b.callback_manager.set("load_model", fetchFBA, settings.fba_results);
+        } else if (settings.fva_results) {
+          console.log("settings.fva_results");
+          b.callback_manager.set("load_model", fetchFVA, settings.fva_results);
+        }
         fetch(modelDataUrl)
             .then((x) => x.json())
             .then((json) => {
