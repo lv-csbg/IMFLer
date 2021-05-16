@@ -26,3 +26,22 @@ It builds upon several technologies:
 5. Run FBA or FVA.
 6. Analyse the visualised results.
 
+### Visualisation settings
+IMFLer's basic default visualisation settings are encoded in a JSON file.
+It is stored as `static/data/settings.json`. You can change it in your local IMFLer version.
+
+You can also pass it as a GET parameter `settings` in your URL.
+
+Here is an example how to load a different map and a diffent model using JavaScript on Imfler's page:
+```js
+var newSettings = 
+{
+  "model": "https://escher.github.io/1-0-0/6/models/Escherichia%20coli/iJO1366.json",
+  "map": "https://escher.github.io/1-0-0/6/maps/Escherichia%20coli/iJO1366.Central%20metabolism.json"
+}
+var newURI = encodeURI(`${window.location.origin}/?settings=${JSON.stringify(newSettings)}`);
+window.location.href = newURI;
+```
+The resulting URL in the example would be:
+
+https://lv-csbg.github.io/?settings=%7B%22model%22:%22https://escher.github.io/1-0-0/6/models/Escherichia%2520coli/iJO1366.json%22,%22map%22:%22https://escher.github.io/1-0-0/6/maps/Escherichia%2520coli/iJO1366.Central%2520metabolism.json%22%7D

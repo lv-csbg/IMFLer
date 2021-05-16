@@ -333,14 +333,27 @@ function initSavedStyleOptions() {
     b._curType = "None";
 }
 
-function init() {
+function init(settings) {
+    var searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has("settings")) {
+        const settingsJSON = searchParams.get("settings");
+        let givenSettings = JSON.parse(settingsJSON);
+        settings = givenSettings;
+    }
     addMessage("Python initialisation started...");
-    pyodideWorker.postMessage({ python: program_init });
-    escher.libs.d3_json('static/data/maps/e_coli_core.Core-metabolism.json', function (error, data) {
+    pyodideWorker.postMessage({
+        python: program_init
+    });
+    escher.libs.d3_json(settings.map, function(error, data) {
         if (error) console.warn(error);
-        var options = { menu: 'all', fill_screen: true, tooltip_component: FBAFVATooltip };
-        var modelDataUrl = 'static/data/models/e_coli_core.json';
+        var options = {
+            menu: 'all',
+            fill_screen: true,
+            tooltip_component: FBAFVATooltip
+        };
+        var modelDataUrl = settings.model;
         window.b = escher.Builder(data, null, null, escher.libs.d3_select('#map_container'), options);
+        b._imfler_settings = settings;
         b.callback_manager.set("load_model", loadModelToWebWorker);
         fetch(modelDataUrl)
             .then((x) => x.json())
