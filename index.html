@@ -37,7 +37,9 @@
     </div>
   </div>
   <script>
-    init();
+    fetch("static/data/settings.json")
+      .then(response => response.json())
+      .then(settings => init(settings));
   </script>
 </body>
 

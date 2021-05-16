@@ -333,14 +333,27 @@ function initSavedStyleOptions() {
     b._curType = "None";
 }
 
-function init() {
+function init(settings) {
+    var searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has("settings")) {
+        const settingsJSON = searchParams.get("settings");
+        let givenSettings = JSON.parse(settingsJSON);
+        settings = givenSettings;
+    }
     addMessage("Python initialisation started...");
-    pyodideWorker.postMessage({ python: program_init });
-    escher.libs.d3_json('static/data/maps/e_coli_core.Core-metabolism.json', function (error, data) {
+    pyodideWorker.postMessage({
+        python: program_init
+    });
+    escher.libs.d3_json(settings.map, function(error, data) {
         if (error) console.warn(error);
-        var options = { menu: 'all', fill_screen: true, tooltip_component: FBAFVATooltip };
-        var modelDataUrl = 'static/data/models/e_coli_core.json';
+        var options = {
+            menu: 'all',
+            fill_screen: true,
+            tooltip_component: FBAFVATooltip
+        };
+        var modelDataUrl = settings.model;
         window.b = escher.Builder(data, null, null, escher.libs.d3_select('#map_container'), options);
+        b._imfler_settings = settings;
         b.callback_manager.set("load_model", loadModelToWebWorker);
         fetch(modelDataUrl)
             .then((x) => x.json())
@@ -410,7 +423,10 @@ function createFBALegend({
     marginLeft = 5,
     marginRight = 5,
     marginBottom = 16 + xAxisTickOutsideLength,
-    height = 44 + xAxisTickOutsideLength
+    height = 44 + xAxisTickOutsideLength,
+    svgX = calcRightTopCanvasPoint().x - width - 1200,
+    svgY = calcRightTopCanvasPoint().y + 150,
+    svgScale = 4
 } = {}) {
     let isAbsolute;
     var minValue = b.map.data_statistics.reaction.min;
@@ -424,7 +440,7 @@ function createFBALegend({
     const gradientId = "FBAgradient";
     var svg = d3.create("svg")
         .attr("class", "legend")
-        .attr("transform", "translate(4500,500) scale(4)")
+        .attr("transform", `translate(${svgX},${svgY}) scale(${svgScale})`)
         .attr("height", height)
         .attr("width", width);
     var defs = svg.append("defs");
@@ -507,7 +523,8 @@ function createFVALegend({
     shapePadding = 80,
     width = shapePadding * 29,
     svgX = calcRightTopCanvasPoint().x - width - 10,
-    svgY = calcRightTopCanvasPoint().y + 10
+    svgY = calcRightTopCanvasPoint().y + 10,
+    svgScale = 1
 } = {}) {
     var sublegendHeight = height / 3;
     var scalePoints = getCurrentStyleOptions().reaction_scale
@@ -534,7 +551,7 @@ function createFVALegend({
 
     var svg = d3.create("svg")
         .attr("class", "legend")
-        .attr("transform", `translate(${svgX},${svgY}) scale(1)`)
+        .attr("transform", `translate(${svgX},${svgY}) scale(${svgScale})`)
         .attr("height", height)
         .attr("width", width);
 
