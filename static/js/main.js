@@ -445,8 +445,8 @@ function init(settings) {
 }
 
 function updateLegend(curType) {
-    let svg;
-    var legend = document.querySelector("svg.legend");
+    let newLegend;
+    var legend = document.querySelector("g.legend");
     if (legend !== null) {
         legend.remove()
     }
@@ -454,16 +454,26 @@ function updateLegend(curType) {
         curType = b._curType;
     }
     if (curType === "FBA") {
-        svg = createFBALegend();
+        newLegend = createFBALegend();
     } else if (curType === "FVA") {
-        svg = createFVALegend();
+        newLegend = createFVALegend();
     } else if (curType === "None") {
       return
     } else {
         console.error(`updateLegend failed, b._curType / curType is not recognized. ${curType}`);
     }
     var zoomedArea = document.querySelector("g.zoom-g");
-    zoomedArea.appendChild(svg.node());
+    zoomedArea.appendChild(newLegend.node());
+}
+
+function createLegendParent(svgX, svgY, svgScale, height, width) {
+    var gParent = d3.select("g.zoom-g").append("g")
+        .attr("class", "legend")
+        .attr("transform", `translate(${svgX},${svgY}) scale(${svgScale})`);
+    var svg = gParent.append("svg")
+        .attr("height", height + "px")
+        .attr("width", width + "px");
+    return [gParent, svg]
 }
 
 function createFBALegend({
@@ -488,11 +498,7 @@ function createFBALegend({
     }
     var title = `Flux, ${isAbsolute}value (mmol gDW-1 hr-1)`;
     const gradientId = "FBAgradient";
-    var svg = d3.create("svg")
-        .attr("class", "legend")
-        .attr("transform", `translate(${svgX},${svgY}) scale(${svgScale})`)
-        .attr("height", height)
-        .attr("width", width);
+    var [gParent, svg] = createLegendParent(svgX, svgY, svgScale, height, width);
     var defs = svg.append("defs");
 
     svg.append("rect")
@@ -548,7 +554,7 @@ function createFBALegend({
             .attr("font-weight", "bold")
             .attr("class", "title")
             .text(title));
-    return svg
+    return gParent
 }
 
 function calcRightTopCanvasPoint() {
@@ -570,8 +576,8 @@ function createFVALegend({
     height = (maxStrokeHeight + titleFontSize + xAxisLabelSize + 20) * 3,
     labelWrap = 30,
     shapeWidth = 70,
-    shapePadding = 80,
-    width = shapePadding * 29,
+    shapePadding = 10,
+    width = (shapeWidth + shapePadding) * 29,
     svgX = calcRightTopCanvasPoint().x - width - 10,
     svgY = calcRightTopCanvasPoint().y + 10,
     svgScale = 1
@@ -598,12 +604,7 @@ function createFVALegend({
             "fScalePoints": scalePoints.filter(x => x.value >= 1000.0)
         }
     ];
-
-    var svg = d3.create("svg")
-        .attr("class", "legend")
-        .attr("transform", `translate(${svgX},${svgY}) scale(${svgScale})`)
-        .attr("height", height)
-        .attr("width", width);
+    var [gParent, svg] = createLegendParent(svgX, svgY, svgScale, height, width);
 
     var defs = svg.append("defs");
     var legendCSS = `
@@ -660,7 +661,7 @@ function createFVALegend({
 
     var svgStyle = defs.append("style");
     svgStyle.node().innerHTML = legendCSS;
-    return svg
+    return gParent;
 }
 
 function clearOther(x, selector="div#control-board input") {
