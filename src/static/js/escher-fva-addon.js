@@ -34,14 +34,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
 **/
-// escher.Builder.prototype.default_set_reaction_data = escher.Builder.prototype.set_reaction_data
-// escher.Builder.prototype.set_reaction_data = function (data) {
-//     if (data.length == 1 && escher.libs.underscore.contains(Object.keys(data[0]), ('minimum', 'maximum'))) {
-//         this.set_fva_data([data[0].minimum, data[0].maximum])
-//     } else {
-//         this.default_set_reaction_data(data)
-//     }
-// }
+escher.Builder.prototype.set_fba_reaction_data = escher.Builder.prototype.set_reaction_data
+
+escher.Builder.prototype.set_reaction_data = function(data) {
+    if (data === null) {
+        this.setSavedStyleOptions("None");
+        this.set_fba_reaction_data(data);
+        return
+    }
+    if (escher.libs.underscore.contains(Object.keys(data), ('minimum', 'maximum'))) {
+        this.setSavedStyleOptions("FVA");
+        this.has_custom_reaction_styles = true;
+        this.set_fva_reaction_data([data.minimum, data.maximum])
+    } else {
+        this.setSavedStyleOptions("FBA");
+        // this.has_custom_reaction_styles = false;
+        this.set_fba_reaction_data(data);
+    }
+}
+
 const reaction_scale_preset_fva = (function() {
     const green = (function () {
         var res = [
@@ -87,8 +98,64 @@ const reaction_scale_preset_fva = (function() {
     return [].concat(red, yellow, green)
 })()
 
-escher.Builder.prototype.set_fva_data = function set_fva_data(data) {
-    console.log("Started set_fva_data");
+escher.Builder.prototype.getCurrentStyleOptions = function getCurrentStyleOptions() {
+    const optionsToSave = [
+        "reaction_scale",
+        "reaction_scale_preset",
+        "reaction_compare_style",
+        "reaction_styles",
+    ]
+    var savedOptions = {}
+    for (const option of optionsToSave) {
+        savedOptions[option] = this.settings.get(option)
+    }
+    return savedOptions
+}
+
+escher.Builder.prototype.initSavedStyleOptions = function initSavedStyleOptions() {
+    const reaction_scale_preset_fba = [
+        {type: "min", color: "#c8c8c8", size: 12},
+        {type: "value", value: 0.01, color: "#9696ff", size: 16},
+        {type: "value", value: 20, color: "#209123", size: 20},
+        {type: "max", color: "#ff0000", size: 25}
+    ]
+    const default_fba_options = {
+        reaction_scale: reaction_scale_preset_fba,
+        reaction_scale_preset: "GaBuGeRd",
+        reaction_compare_style: "log2_fold",
+        reaction_styles: ["color", "size", "text"],
+    }
+    const default_fva_options = {
+        reaction_scale: reaction_scale_preset_fva,
+        reaction_scale_preset: false,
+        reaction_compare_style: "diff",
+        reaction_styles: ["color", "text", "size"],
+    }
+    var _allSavedOptions = {};
+    _allSavedOptions["None"] = this.getCurrentStyleOptions();
+    _allSavedOptions["FBA"] = default_fba_options;
+    _allSavedOptions["FVA"] = default_fva_options;
+    this._allSavedOptions = _allSavedOptions;
+    this._curType = "None";
+}
+
+escher.Builder.prototype.setSavedStyleOptions = function setSavedStyleOptions(newType) {
+    if (typeof this._allSavedOptions === "object") {
+        var curType = this._curType;
+        this._allSavedOptions[curType] = this.getCurrentStyleOptions();
+        var savedOptions = this._allSavedOptions[newType];
+        for (const option in savedOptions) {
+            this.settings.set(option, savedOptions[option])
+        }
+        this._curType = newType;
+    } else {
+        this.initSavedStyleOptions();
+        this.setSavedStyleOptions(newType);
+    }
+}
+
+escher.Builder.prototype.set_fva_reaction_data = function set_fva_reaction_data(data) {
+    console.log("Started set_fva_reaction_data");
     // START
     this.settings.set('reaction_data', data)
     // clear gene data
@@ -118,7 +185,7 @@ escher.Builder.prototype.set_fva_data = function set_fva_data(data) {
         this.settings.set('disabled_buttons', disabledButtons)
     }
     // END
-    console.log("Finished set_fva_data");
+    console.log("Finished set_fva_reaction_data");
 }
 const RETURN_ARG = x => x
 

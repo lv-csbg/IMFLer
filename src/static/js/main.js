@@ -143,47 +143,9 @@ function enableButton(button, message) {
     button.innerHTML = message;
 }
 
-function getCurrentStyleOptions() {
-    const optionsToSave = [
-        "reaction_scale", 
-        "reaction_scale_preset", 
-        "reaction_compare_style",
-        "reaction_styles",
-    ]
-    var savedOptions = {}
-    for (const option of optionsToSave) {
-        savedOptions[option] = b.settings.get(option)
-    }
-    return savedOptions
-}
-
-function setSavedStyleOptions(newType) {
-    if (typeof b._allSavedOptions === "object") {
-        var curType = b._curType;
-        b._allSavedOptions[curType] = getCurrentStyleOptions();
-        var savedOptions = b._allSavedOptions[newType];
-        for (const option in savedOptions) {
-            b.settings.set(option, savedOptions[option])
-        }
-        b._curType = newType;
-    } else {
-        initSavedStyleOptions();
-        setSavedStyleOptions(newType);
-    }
-}
-
-function setFBAResults(fba_results) {
-    console.log("setFBAResults");
-    setSavedStyleOptions("FBA");
-    // b.has_custom_reaction_styles = false;
-    b.set_reaction_data(fba_results);
-    b.callback_manager.set("update_data", updateLegend);
-}
-
-function setFVAResults(fva_results) {
-    setSavedStyleOptions("FVA");
-    b.has_custom_reaction_styles = true;
-    b.set_fva_data([fva_results.minimum, fva_results.maximum]);
+function setFAResults(fa_results) {
+    console.log("setFAResults");
+    b.set_reaction_data(fa_results);
     b.callback_manager.set("update_data", updateLegend);
 }
 
@@ -191,14 +153,14 @@ function fetchFBA() {
   console.log("fetchFBA");
   fetch(b._imfler_settings.fba_results)
     .then(response => response.json())
-    .then(fba_results => setFBAResults(fba_results));
+    .then(fba_results => setFAResults(fba_results));
 }
 
 function fetchFVA() {
   console.log("fetchFVA");
   fetch(b._imfler_settings.fva_results)
     .then(response => response.json())
-    .then(fva_results => setFVAResults(fva_results));
+    .then(fva_results => setFAResults(fva_results));
 }
 
 function addMessageWithButton(res, message, type) {
@@ -232,17 +194,26 @@ pyodideWorker.onmessage = (e) => {
     }
     if (results) {
         console.log('pyodideWorker return results:', results);
-        if (results.result_type === 'fba_fluxes') {
-            const fba_results = JSON.parse(results.result);
-            setFBAResults(fba_results);
-            addMessageWithButton(results.result, "Finished FBA", "fba");
-            enableButton(document.getElementById("FBA-button"), "Run FBA");
+        const faParameters = {
+          "fba_fluxes": {
+            "message": "Finished FBA",
+            "type": "fba",
+            "buttonId": "FBA-button",
+            "buttonMessage":"Run FBA"
+          },
+          "fva_fluxes": {
+            "message": "Finished FVA",
+            "type": "fva",
+            "buttonId": "FVA-button",
+            "buttonMessage":"Run FVA"
+          }
         }
-        if (results.result_type === 'fva_fluxes') {
-            const fva_results = JSON.parse(results.result);
-            setFVAResults(fva_results);
-            addMessageWithButton(results.result, "Finished FVA", "fva");
-            enableButton(document.getElementById("FVA-button"), "Run FVA");
+        if (['fba_fluxes', 'fva_fluxes'].includes(results.result_type)) {
+            const fa_results = JSON.parse(results.result);
+            setFAResults(fa_results);
+            const p = faParameters[results.result_type];
+            addMessageWithButton(results.result, p.message, p.type);
+            enableButton(document.getElementById(p.buttonId), p.buttonMessage);
         }
         if (results.result_type === 'cobra_init') {
             window.cobrapy_init = true;
@@ -340,33 +311,6 @@ function sendBoundsToWebWorker(bounds) {
     }
 }
 
-function initSavedStyleOptions() {
-    const reaction_scale_preset_fba = [
-        {type: "min", color: "#c8c8c8", size: 12},
-        {type: "value", value: 0.01, color: "#9696ff", size: 16},
-        {type: "value", value: 20, color: "#209123", size: 20},
-        {type: "max", color: "#ff0000", size: 25}
-    ]
-    const default_fba_options = {
-        reaction_scale: reaction_scale_preset_fba,
-        reaction_scale_preset: "GaBuGeRd",
-        reaction_compare_style: "log2_fold",
-        reaction_styles: ["color", "size", "text"],
-    }
-    const default_fva_options = {
-        reaction_scale: reaction_scale_preset_fva,
-        reaction_scale_preset: false,
-        reaction_compare_style: "diff",
-        reaction_styles: ["color", "text", "size"],
-    }
-    var _allSavedOptions = {};
-    _allSavedOptions["None"] = getCurrentStyleOptions();
-    _allSavedOptions["FBA"] = default_fba_options;
-    _allSavedOptions["FVA"] = default_fva_options;
-    b._allSavedOptions = _allSavedOptions;
-    b._curType = "None";
-}
-
 function init(settings) {
     var searchParams = new URLSearchParams(window.location.search);
     if (searchParams.has("settings")) {
@@ -414,7 +358,7 @@ function init(settings) {
                 window.b.current_reaction_bounds = bounds;
                 b.load_model(json);
             });
-        initSavedStyleOptions();
+        b.initSavedStyleOptions();
     });
     document.getElementById("FBA-button").onclick = function () {
         disableButton(this, "Running FBA");
@@ -509,7 +453,7 @@ function createFBALegend({
         .attr("height", height - marginTop - marginBottom)
         .attr("fill", `url('#${gradientId}')`);
 
-    var scalePoints = getCurrentStyleOptions().reaction_scale;
+    var scalePoints = b.getCurrentStyleOptions().reaction_scale;
     var gradient = defs.append("linearGradient")
         .attr("id", gradientId);
 
@@ -583,7 +527,7 @@ function createFVALegend({
     svgScale = 1
 } = {}) {
     var sublegendHeight = height / 3;
-    var scalePoints = getCurrentStyleOptions().reaction_scale
+    var scalePoints = b.getCurrentStyleOptions().reaction_scale
 
     var classesParameters = [{
             "className": "reverse",
