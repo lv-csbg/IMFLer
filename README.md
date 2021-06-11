@@ -15,7 +15,7 @@ It builds upon several technologies:
 
 ## Usage
 
-1. Go to https://lv-csbg.github.io/flux-analysis/
+1. Go to https://lv-csbg.github.io/IMFLer/
 2. Load an Escher map of interest from a JSON file.
     * **Ctrl+O** or from menu on the top **Map -> Load map JSON**
 3. Load COBRA model corresponding to the map of interest.
@@ -44,7 +44,7 @@ window.location.href = newURI;
 ```
 The resulting URL in the example would be:
 
-https://lv-csbg.github.io/flux-analysis/?settings=%7B%22model%22:%22https://escher.github.io/1-0-0/6/models/Escherichia%2520coli/iJO1366.json%22,%22map%22:%22https://escher.github.io/1-0-0/6/maps/Escherichia%2520coli/iJO1366.Central%2520metabolism.json%22%7D
+https://lv-csbg.github.io/IMFLer/?settings=%7B%22model%22:%22https://escher.github.io/1-0-0/6/models/Escherichia%2520coli/iJO1366.json%22,%22map%22:%22https://escher.github.io/1-0-0/6/maps/Escherichia%2520coli/iJO1366.Central%2520metabolism.json%22%7D
 
 If you don't provide essential `model` and `map` parameters, default ones are going to be used.
 
