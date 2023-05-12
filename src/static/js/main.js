@@ -39,8 +39,23 @@ class FBAFVATooltip extends Component {
         // var decomp = this.decompartmentalizeCheck(this.props.biggId, this.props.type);
         // var biggButtonText = 'Open ' + decomp + ' in BiGG Models.';
         if (this.props.type === 'reaction') {
-            let lower_bound = window.b.current_reaction_bounds ? window.b.current_reaction_bounds[this.props.biggId][0] : -10000;
-            let upper_bound = window.b.current_reaction_bounds ? window.b.current_reaction_bounds[this.props.biggId][1] : 10000;
+            if (this.props.hasOwnProperty("biggId")) {
+                if (window.b.current_reaction_bounds.hasOwnProperty(this.props.biggId)) {
+                    const bounds = window.b.current_reaction_bounds[this.props.biggId];
+                    var lower_bound = window.b.current_reaction_bounds ? bounds[0] : -1000;
+                    var upper_bound = window.b.current_reaction_bounds ? bounds[1] : 1000;
+                }
+                else {
+                    console.warn(`Current reaction bounds are missing from escher.Builder.current_reaction_bounds for this reaction: ${this.props.biggId}`);
+                    var lower_bound = -1000;
+                    var upper_bound = 1000;
+                    window.b.current_reaction_bounds[this.props.biggId] = [lower_bound, upper_bound];
+                    console.info(`Added current reaction bounds for a reaction with biggId ${this.props.biggId}`);
+                }
+            }
+            else {
+                console.warning(`The current reaction does not have biggId: ${this.props}`);
+            }
             return (0, h)(
                 'div',
                 {
@@ -295,6 +310,12 @@ function loadModelToWebWorker(parsedModel) {
     }
 }
 
+function gatherReactionBoundsForEscherBuilder(parsedModel) {
+    let bounds = {};
+    parsedModel.reactions.forEach(x => bounds[x.id] = [x.lower_bound, x.upper_bound])
+    window.b.current_reaction_bounds = bounds;
+}
+
 function sendBoundsToWebWorker(bounds) {
     const reactions_bounds_json = JSON.stringify(bounds);
     function sendBounds() {
@@ -338,6 +359,7 @@ function init(settings) {
         b._imfler_settings = settings;
         b._saved_results = {};
         b.callback_manager.set("load_model", loadModelToWebWorker);
+        b.callback_manager.set("load_model", gatherReactionBoundsForEscherBuilder);
         if (settings.fba_results && settings.fva_results) {
           addMessage("Both FBA and FVA results provided. Choosing to show FVA.")
           console.log("settings.fba_results && settings.fva_results");
@@ -353,9 +375,7 @@ function init(settings) {
             .then((x) => x.json())
             .then((json) => {
                 window.b.default_model = json;
-                const bounds = {}
-                json.reactions.forEach(x => bounds[x.id] = [x.lower_bound, x.upper_bound])
-                window.b.current_reaction_bounds = bounds;
+                gatherReactionBoundsForEscherBuilder(json);
                 b.load_model(json);
             });
         b.initSavedStyleOptions();
